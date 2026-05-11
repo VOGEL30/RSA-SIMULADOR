@@ -1,59 +1,240 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <meta charset="UTF-8">
+    <title>Simulador RSA - Terminal de Criptografia</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: black; color: #00ff88; font-family: 'Courier New', monospace; overflow-x: hidden; }
+        
+        /* Tela de Inicialização */
+        #boot-screen {
+            position: fixed; inset: 0; background: black; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #boot-text { font-size: 20px; line-height: 1.8; text-shadow: 0 0 8px #00ff88; }
 
-  <meta charset="UTF-8">
+        /* Efeito Matrix de Fundo */
+        canvas { position: fixed; top: 0; left: 0; z-index: -1; }
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        /* Painel Principal */
+        .container {
+            width: 95%; max-width: 850px; margin: 40px auto;
+            background: rgba(0, 0, 0, 0.92); border: 2px solid #00ff88;
+            border-radius: 15px; padding: 30px; box-shadow: 0 0 25px #00ff88;
+            position: relative; z-index: 10;
+        }
 
-  <title>RSA Hacker Simulator</title>
+        .hidden { display: none !important; }
 
-  <link rel="stylesheet" href="style.css">
+        h1 { text-align: center; font-size: 32px; margin-bottom: 5px; letter-spacing: 2px; }
+        .sub { text-align: center; color: #8effc6; margin-bottom: 25px; font-size: 14px; text-transform: uppercase; }
 
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: bold; color: #00ff88; }
+        input { 
+            width: 100%; padding: 12px; background: #000; border: 1px solid #00ff88; 
+            color: #00ff88; font-family: 'Courier New', monospace; outline: none; 
+        }
+        input:focus { box-shadow: 0 0 10px #00ff88; border-color: #fff; }
+
+        button { 
+            width: 100%; padding: 18px; background: #00ff88; color: black; 
+            font-weight: bold; border: none; cursor: pointer; margin-top: 20px; 
+            font-size: 16px; transition: 0.3s; text-transform: uppercase;
+        }
+        button:hover { background: #fff; box-shadow: 0 0 20px #00ff88; transform: scale(1.01); }
+
+        /* Blocos de Resultado e Explicação */
+        .bloco { 
+            margin-top: 25px; padding: 20px; border: 1px solid #00ff88; 
+            border-radius: 10px; background: rgba(0, 255, 136, 0.05); 
+            animation: surgir 0.6s ease-out; 
+        }
+        .titulo-bloco { 
+            font-size: 18px; color: #00ff88; margin-bottom: 12px; 
+            border-bottom: 1px solid #00ff88; display: inline-block; font-weight: bold;
+        }
+        .explica { font-size: 14px; line-height: 1.6; color: #d1ffe8; margin-bottom: 10px; }
+        .formula { 
+            background: #000; padding: 15px; border-radius: 5px; 
+            border-left: 4px solid #00ff88; font-family: serif; font-size: 18px; 
+            margin: 10px 0; color: #fff;
+        }
+        .terminal { 
+            background: #050505; padding: 12px; font-size: 13px; 
+            color: #00ff88; border: 1px solid #004422; line-height: 1.5;
+        }
+
+        .barra-container { width: 100%; height: 12px; border: 1px solid #00ff88; margin-top: 10px; border-radius: 6px; overflow: hidden; }
+        .progresso { width: 0%; height: 100%; background: #00ff88; transition: 2.5s ease-in-out; }
+
+        @keyframes surgir { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body>
 
-  <!-- Fundo Matrix -->
-
-  <canvas id="matrix"></canvas>
-
-  <div class="container">
-
-    <h1>RSA HACKER TERMINAL</h1>
-
-    <p class="subtitulo">
-      Simulação visual da criptografia RSA
-    </p>
-
-    <!-- Área de entrada -->
-
-    <div class="box">
-
-      <label>NÚMERO PRIMO P</label>
-
-      <input type="number" id="p" placeholder="Ex: 17">
-
-      <label>NÚMERO PRIMO Q</label>
-
-      <input type="number" id="q" placeholder="Ex: 11">
-
-      <label>MENSAGEM</label>
-
-      <input type="text" id="mensagem" maxlength="1" placeholder="Digite uma letra">
-
-      <button id="botao">
-        INICIAR SISTEMA
-      </button>
-
+    <div id="boot-screen">
+        <div id="boot-text"></div>
     </div>
 
-    <!-- Resultado -->
+    <canvas id="matrix"></canvas>
 
-    <div id="resultado"></div>
+    <div class="container hidden" id="app">
+        <h1>TERMINAL HACKER RSA</h1>
+        <p class="sub">Protocolo de Simulação de Criptografia Assimétrica</p>
 
-  </div>
+        <div class="box">
+            <div class="form-group">
+                <label>NÚMERO PRIMO (P)</label>
+                <input type="number" id="p" value="17" placeholder="Digite um primo">
+            </div>
+            <div class="form-group">
+                <label>NÚMERO PRIMO (Q)</label>
+                <input type="number" id="q" value="11" placeholder="Digite outro primo">
+            </div>
+            <div class="form-group">
+                <label>MENSAGEM (APENAS UMA LETRA)</label>
+                <input type="text" id="mensagem" maxlength="1" value="b" placeholder="Ex: A">
+            </div>
+            <button id="botao">Executar Algoritmo de Criptografia</button>
+        </div>
 
-  <script src="script.js"></script>
+        <div id="resultado"></div>
+    </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // --- Efeito de Inicialização (Boot) ---
+            const bootText = document.getElementById("boot-text");
+            const frasesBoot = [
+                "> INICIALIZANDO KERNEL RSA...",
+                "> CARREGANDO MÓDULOS MATEMÁTICOS...",
+                "> ESTABELECENDO CONEXÃO SEGURA...",
+                "> ACESSO CONCEDIDO AO TERMINAL."
+            ];
+            let linhaAtual = 0;
+            function dispararBoot() {
+                if (linhaAtual < frasesBoot.length) { 
+                    bootText.innerHTML += frasesBoot[linhaAtual] + "<br>"; 
+                    linhaAtual++; 
+                    setTimeout(dispararBoot, 600); 
+                } else { 
+                    setTimeout(() => { 
+                        document.getElementById("boot-screen").classList.add("hidden"); 
+                        document.getElementById("app").classList.remove("hidden"); 
+                    }, 800); 
+                }
+            }
+            dispararBoot();
+
+            // --- Efeito Matrix ---
+            const canvas = document.getElementById("matrix");
+            const ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight;
+            const colunas = canvas.width / 15;
+            const gotas = Array(Math.floor(colunas)).fill(1);
+            function animarMatrix() {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; 
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "#00ff88"; 
+                ctx.font = "15px monospace";
+                gotas.forEach((y, x) => {
+                    const caractere = String.fromCharCode(Math.random() * 128);
+                    ctx.fillText(caractere, x * 15, y * 15);
+                    if (y * 15 > canvas.height && Math.random() > 0.975) gotas[x] = 0;
+                    gotas[x]++;
+                });
+            }
+            setInterval(animarMatrix, 35);
+
+            // --- Lógica RSA ---
+            document.getElementById("botao").onclick = () => {
+                const p = BigInt(document.getElementById("p").value);
+                const q = BigInt(document.getElementById("q").value);
+                const msgOriginal = document.getElementById("mensagem").value;
+                
+                if (!p || !q || !msgOriginal) return alert("Por favor, preencha todos os campos.");
+
+                const n = p * q;
+                const phi = (p - 1n) * (q - 1n);
+                const e = 3n; // Expoente público padrão para o exemplo
+                
+                // Cálculo da Chave Privada (Inverso Modular)
+                let d = 1n;
+                while ((d * e) % phi !== 1n) { 
+                    d++; 
+                    if(d > 50000n) break; // Limite de segurança para o browser
+                }
+
+                const m = BigInt(msgOriginal.charCodeAt(0));
+                
+                // Encriptação: C = M^e mod N
+                const c = m ** e % n;
+                
+                // Decriptação: M = C^d mod N
+                const mRecuperado = c ** d % n;
+
+                document.getElementById("resultado").innerHTML = `
+                    <div class="bloco">
+                        <div class="titulo-bloco">PASSO 1: O MÓDULO (N)</div>
+                        <p class="explica">Primeiro, multiplicamos os dois números primos escolhidos para gerar o <b>Módulo N</b>. Este número é a base da segurança e será parte da chave pública.</p>
+                        <div class="formula">n = p &times; q &rarr; ${p} &times; ${q} = ${n}</div>
+                    </div>
+
+                    <div class="bloco">
+                        <div class="titulo-bloco">PASSO 2: FUNÇÃO TOTIENTE φ(N)</div>
+                        <p class="explica">Calculamos o valor de Totiente de Euler. Esse resultado determina o espaço matemático onde as chaves serão geradas.</p>
+                        <div class="formula">&phi;(n) = (p - 1) &times; (q - 1) = ${phi}</div>
+                    </div>
+
+                    <div class="bloco">
+                        <div class="titulo-bloco">PASSO 3: GERAÇÃO DAS CHAVES</div>
+                        <p class="explica">Com os valores anteriores, o sistema gera o par de chaves: a <b>Pública (e)</b> para trancar a mensagem e a <b>Privada (d)</b> para abri-la.</p>
+                        <div class="terminal">
+                            > CHAVE PÚBLICA (e): ${e}<br>
+                            > CHAVE PRIVADA (d): ${d}<br>
+                            > STATUS: Chaves vinculadas matematicamente via Inverso Modular.
+                        </div>
+                    </div>
+
+                    <div class="bloco">
+                        <div class="titulo-bloco">PASSO 4: PROCESSO DE CRIPTOGRAFIA</div>
+                        <p class="explica">A letra "${msgOriginal}" é convertida para seu valor numérico ASCII (${m}). Em seguida, elevamos esse valor ao expoente <b>e</b> dentro do módulo <b>n</b>.</p>
+                        <div class="formula">C = M<sup>e</sup> mod n &rarr; ${m}<sup>${e}</sup> mod ${n} = ${c}</div>
+                        <div class="terminal">> O texto cifrado enviado ao servidor é o número: ${c}</div>
+                    </div>
+
+                    <div class="bloco">
+                        <div class="titulo-bloco">PASSO 5: PROCESSO DE DESCRIPTOGRAFIA</div>
+                        <p class="explica">O destinatário recebe o código cifrado (${c}) e utiliza sua chave privada secreta (d) para reverter o cálculo e recuperar o valor original.</p>
+                        <div class="formula">M = C<sup>d</sup> mod n &rarr; ${c}<sup>${d}</sup> mod ${n} = ${mRecuperado}</div>
+                        <div class="terminal">
+                            > Valor original recuperado: ${mRecuperado}<br>
+                            > Traduzindo código ASCII para texto...<br>
+                            > <strong>MENSAGEM FINAL: "${String.fromCharCode(Number(mRecuperado))}"</strong>
+                        </div>
+                    </div>
+
+                    <div class="bloco">
+                        <div class="titulo-bloco">SIMULAÇÃO DE ATAQUE HACKER</div>
+                        <p class="explica">Um ataque de "Força Bruta" tenta fatorar o número N para descobrir P e Q. Se os números forem pequenos, a segurança é quebrada instantaneamente.</p>
+                        <div class="barra-container"><div class="progresso" id="barra-p"></div></div>
+                        <div class="terminal" id="status-ataque">> Analisando vulnerabilidades no módulo N=${n}...</div>
+                    </div>
+                `;
+                
+                // Animação da barra de ataque
+                setTimeout(() => { 
+                    const barra = document.getElementById("barra-p");
+                    const status = document.getElementById("status-ataque");
+                    barra.style.width = "100%";
+                    status.innerHTML = `> ALERTA: Segurança de N=${n} comprometida!<br>> Fatores descobertos: ${p} e ${q}.<br>> RESULTADO: Criptografia de baixo nível detectada. Use primos maiores!`;
+                    status.style.color = "#ff4444";
+                }, 200);
+            };
+        });
+    </script>
 </body>
 </html>
