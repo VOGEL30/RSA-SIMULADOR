@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>RSA Hacker Simulator</title>
+
+  <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+  <!-- Fundo Matrix -->
+
+  <canvas id="matrix"></canvas>
+
+  <div class="container">
+
+    <h1>RSA HACKER TERMINAL</h1>
+
+    <p class="subtitulo">
+      Simulação visual da criptografia RSA
+    </p>
+
+    <!-- Área de entrada -->
+
+    <div class="box">
+
+      <label>NÚMERO PRIMO P</label>
+
+      <input type="number" id="p" placeholder="Ex: 17">
+
+      <label>NÚMERO PRIMO Q</label>
+
+      <input type="number" id="q" placeholder="Ex: 11">
+
+      <label>MENSAGEM</label>
+
+      <input type="text" id="mensagem" maxlength="1" placeholder="Digite uma letra">
+
+      <button id="botao">
+        INICIAR SISTEMA
+      </button>
+
+    </div>
+
+    <!-- Resultado -->
+
+    <div id="resultado"></div>
+
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
